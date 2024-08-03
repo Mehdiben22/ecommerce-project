@@ -1,12 +1,13 @@
 import {
   AntDesign,
+  Entypo,
   Feather,
   Ionicons,
   MaterialIcons,
 } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import axios from "axios";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Image,
   Platform,
@@ -18,8 +19,10 @@ import {
   TextInput,
   View,
 } from "react-native";
-import DropDownPicker from "react-native-dropdown-picker";
+import RNPickerSelect from 'react-native-picker-select';
+import { BottomModal, ModalContent, SlideAnimation } from "react-native-modals";
 import Swiper from "react-native-swiper";
+import { useSelector } from "react-redux";
 import ProductItem from "../components/ProductItem";
 
 const HomeScreen = () => {
@@ -193,8 +196,7 @@ const HomeScreen = () => {
     },
   ];
   const [products, setProducts] = useState([]);
-  const [open, setOpen] = useState(false);
-  const [category, setCategory] = useState("jewlery");
+  const [category, setCategory] = useState("jewelery");
   const [items, setItems] = useState([
     { label: "Men's clothing", value: "men's clothing" },
     { label: "jewelery", value: "jewelery" },
@@ -203,22 +205,24 @@ const HomeScreen = () => {
   ]);
 
   const navigation = useNavigation();
+  const [modalVisible, setModalVisible] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const response = await axios.get("https://fakestoreapi.com/products");
         setProducts(response.data);
-      } catch (error) {}
+      } catch (error) {
+        console.log("Error fetching data", error);
+      }
     };
     fetchData();
   }, []);
-  const onGenderOpen = useCallback(() => {
-    setCompanyOpen(false);
-  }, []);
-  console.log("products", products);
+
+  const cart = useSelector((state) => state.cart.cart);
+  console.log(cart);
+
   return (
-    //if its android ; 40 else ios : 0
     <SafeAreaView
       style={{
         paddingTop: Platform.OS === "android" ? 40 : 0,
@@ -257,7 +261,8 @@ const HomeScreen = () => {
           </Pressable>
           <Feather name="mic" size={24} color="black" />
         </View>
-        <View
+        <Pressable
+          onPress={() => setModalVisible(!modalVisible)}
           style={{
             flexDirection: "row",
             alignItems: "center",
@@ -273,7 +278,7 @@ const HomeScreen = () => {
             </Text>
           </Pressable>
           <MaterialIcons name="keyboard-arrow-down" size={24} color="black" />
-        </View>
+        </Pressable>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           {list.map((item, index) => (
             <Pressable
@@ -323,6 +328,19 @@ const HomeScreen = () => {
         >
           {deals.map((item, index) => (
             <Pressable
+              key={index}
+              onPress={() =>
+                navigation.navigate("Info", {
+                  id: item.id,
+                  title: item.title,
+                  price: item?.price,
+                  carouselImages: item.carouselImages,
+                  color: item?.color,
+                  size: item?.size,
+                  oldPrice: item?.oldPrice,
+                  item: item,
+                })
+              }
               style={{
                 marginVertical: 10,
                 flexDirection: "row",
@@ -350,6 +368,7 @@ const HomeScreen = () => {
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           {offers.map((item, index) => (
             <Pressable
+              key={index}
               onPress={() =>
                 navigation.navigate("Info", {
                   id: item.id,
@@ -410,30 +429,42 @@ const HomeScreen = () => {
             marginHorizontal: 10,
             marginTop: 20,
             width: "45%",
-            marginBottom: open ? 50 : 15,
+            marginBottom: 15,
           }}
         >
-          <DropDownPicker
-            style={{
-              borderColor: "#B7B7B7",
-              height: 30,
-              marginBottom: open ? 120 : 15,
-            }}
-            open={open}
-            value={category} //genderValue
+          <RNPickerSelect
+            onValueChange={(value) => setCategory(value)}
             items={items}
-            setOpen={setOpen}
-            setValue={setCategory}
-            setItems={setItems}
-            placeholder="choose category"
-            placeholderStyle={styles.placeholderStyles}
-            onOpen={onGenderOpen}
-            // onChangeValue={onChange}
-            zIndex={3000}
-            zIndexInverse={1000}
+            value={category}
+            placeholder={{ label: "Choose category", value: null }}
+            style={{
+              inputIOS: {
+                borderWidth: 1,
+                borderColor: "#B7B7B7",
+                borderRadius: 4,
+                height: 50,
+                padding: 10,
+                marginTop: 20,
+              },
+              inputAndroid: {
+                borderWidth: 1,
+                borderColor: "#B7B7B7",
+                borderRadius: 4,
+                height: 50,
+                padding: 10,
+                marginTop: 20,
+              },
+              iconContainer: {
+                top: 35,
+                right: 10,
+  
+              },
+            }}
+            Icon={() => {
+              return <AntDesign name="down" size={20} color="black" />;
+            }}
           />
         </View>
-        {/* flexwrap meaning if the spaces finishes up between two products go to the next line */}
         <View
           style={{
             flexDirection: "row",
@@ -441,7 +472,6 @@ const HomeScreen = () => {
             flexWrap: "wrap",
           }}
         >
-          {/* filtering items by them category and mapped them */}
           {products
             ?.filter((item) => item.category === category)
             .map((item, index) => (
@@ -449,6 +479,86 @@ const HomeScreen = () => {
             ))}
         </View>
       </ScrollView>
+      <BottomModal
+        onBackdropPress={() => setModalVisible(!modalVisible)}
+        swipeDirection={["up", "down"]}
+        swipeThreshold={200}
+        modalAnimation={
+          new SlideAnimation({
+            slideFrom: "bottom",
+          })
+        }
+        onHardwareBackPress={() => setModalVisible(!modalVisible)}
+        visible={modalVisible}
+        onTouchOutside={() => setModalVisible(!modalVisible)}
+      >
+        <ModalContent style={{ width: "100%", height: 400 }}>
+          <View style={{ marginBottom: 8 }}>
+            <Text style={{ fontSize: 16, fontWeight: "500" }}>
+              Choose your location
+            </Text>
+            <Text style={{ marginTop: 5, fontSize: 16, color: "gray" }}>
+              Select a delivery location to see product availability and
+              delivery options
+            </Text>
+          </View>
+          <ScrollView>
+            {/* Already added adress */}
+            <Pressable
+              onPress={() => {
+                setModalVisible(false);
+                navigation.navigate("Address");
+              }}
+              style={{
+                width: 140,
+                height: 140,
+                borderColor: "#DODODO",
+                marginTop: 10,
+                borderWidth: 1,
+                padding: 10,
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <Text
+                style={{
+                  textAlign: "center",
+                  color: "#0066B2",
+                  fontWeight: "500",
+                }}
+              >
+                Add an address or pick-up point
+              </Text>
+            </Pressable>
+          </ScrollView>
+          <View style={{ flexDirection: "column", gap: 7, marginBottom: 30 }}>
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 5 }}
+            >
+              <Entypo name="location-pin" size={24} color="#0066B2" />
+              <Text style={{ color: "#0066B2", fontWeight: "400" }}>
+                Enter a postal code
+              </Text>
+            </View>
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 5 }}
+            >
+              <Ionicons name="locate-sharp" size={24} color="#0066B2" />
+              <Text style={{ color: "#0066B2", fontWeight: "400" }}>
+                Use my current location
+              </Text>
+            </View>
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 5 }}
+            >
+              <AntDesign name="earth" size={24} color="#0066B2" />
+              <Text style={{ color: "#0066B2", fontWeight: "400" }}>
+                Deliver outside Morocco
+              </Text>
+            </View>
+          </View>
+        </ModalContent>
+      </BottomModal>
     </SafeAreaView>
   );
 };
@@ -465,5 +575,8 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
     resizeMode: "cover",
+  },
+  placeholderStyles: {
+    color: "grey",
   },
 });

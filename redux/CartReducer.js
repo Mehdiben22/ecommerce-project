@@ -8,7 +8,7 @@ export const CartSlice = createSlice({
   reducers: {
     addToCart: (state, action) => {
       //we will create a condition to see if the item is on the cart we will increment it to + another item will be pushed else if no item is present we will push the item to the cart with quantity :1
-      const itemPresent = state.action.find(
+      const itemPresent = state.cart.find(
         (item) => item.id === action.payload.id
       );
       if (itemPresent) {
@@ -24,13 +24,13 @@ export const CartSlice = createSlice({
       state.cart = removeItem;
     },
     incrementQuantity: (state, action) => {
-      const itemPresent = state.action.find(
+      const itemPresent = state.cart.find(
         (item) => item.id === action.payload.id
       );
       itemPresent.quantity++;
     },
     decrementQuantity: (state, action) => {
-      const itemPresent = state.action.find(
+      const itemPresent = state.cart.find(
         (item) => item.id === action.payload.id
       );
       if (itemPresent.quantity == 1) {
